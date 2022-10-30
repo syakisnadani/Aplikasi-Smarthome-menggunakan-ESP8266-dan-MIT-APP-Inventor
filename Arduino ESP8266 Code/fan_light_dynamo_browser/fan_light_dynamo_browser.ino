@@ -1,0 +1,141 @@
+#include <ESP8266WiFi.h>
+#define FAN D2
+#define LIGHT D4
+#define DYNAMO D5
+const char* ssid = "D'RIVERA ATAS";
+const char* password = "samasama";
+unsigned char status_fan = 1;
+unsigned char status_light = 0;
+unsigned char status_dynamo = 1;
+WiFiServer server(80);
+
+void setup(){
+  Serial.begin(115200);
+  pinMode(FAN, OUTPUT);
+  pinMode(LIGHT, OUTPUT);
+  pinMode(DYNAMO, OUTPUT);
+  digitalWrite(FAN,HIGH);
+  digitalWrite(LIGHT,LOW);
+  digitalWrite(DYNAMO,HIGH);
+  Serial.println();
+  Serial.println();
+  Serial.print("Connecting to ");
+  Serial.println(ssid);
+  WiFi.begin(ssid, password);
+  while(WiFi.status()!=WL_CONNECTED)
+  {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("");
+  Serial.println("Wifi Connected");
+  server.begin();
+  Serial.println("Server Started");
+  Serial.println(WiFi.localIP());
+}
+void loop(){
+  WiFiClient client = server.available();
+  if(!client)
+  {
+    return;
+  }
+  Serial.println("new client");
+  while(!client.available())
+  {
+    delay(1);
+  }
+  String req = client.readStringUntil('\r');
+  Serial.println(req);
+  client.flush();
+  
+  if(req.indexOf("/fanon") != -1)
+  {
+    status_fan=0;
+    digitalWrite(FAN,LOW);
+    Serial.println("FAN ON");
+  }
+  else if(req.indexOf("/fanoff") != -1)
+  {
+    status_fan=1;
+    digitalWrite(FAN,HIGH);
+    Serial.println("FAN OFF");
+  }
+
+  if(req.indexOf("/lighton") != -1)
+  {
+    status_light=0;
+    digitalWrite(LIGHT,LOW);
+    Serial.println("LIGHT ON");
+  }
+  else if(req.indexOf("/lightoff") != -1)
+  {
+    status_light=1;
+    digitalWrite(LIGHT,HIGH);
+    Serial.println("LIGHT OFF");
+  }
+
+  if(req.indexOf("/dynamoon") != -1)
+  {
+    status_dynamo=0;
+    digitalWrite(DYNAMO,LOW);
+    Serial.println("DYNAMO ON");
+  }
+  else if(req.indexOf("/dynamooff") != -1)
+  {
+    status_dynamo=1;
+    digitalWrite(DYNAMO,HIGH);
+    Serial.println("DYNAMO OFF");
+  }
+  
+  String web = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n";
+  web +="<html>\r\n";
+  web +="<body>\r\n";
+  web +="<h1>LED Status</h1>\r\n";
+  web +="<p>\r\n";
+  if(status_fan==1)
+    web +="FAN Off\r\n";
+  else
+    web +="FAN on\r\n";
+  if(status_light==1)
+    web +="LIGHT On\r\n";
+  else
+    web +="LIGHT Off\r\n";
+  if(status_dynamo==1)
+    web +="DYNAMO On\r\n";
+  else
+    web +="DYNAMO Off\r\n";
+  web +="</p>\r\n";
+  web +="</p>\r\n";
+  web +="<a href=\"/fanon\">\r\n";
+  web +="<button>FAN ON</button>\r\n";
+  web +="</a>\r\n";
+  web +="</p>\r\n";
+  web +="<a href=\"/fanoff\">\r\n";
+  web +="<button>FAN OFF</button>\r\n";
+  web +="</a>\r\n";
+  
+  web +="</p>\r\n";
+  web +="</p>\r\n";
+  web +="<a href=\"/lightoff\">\r\n";
+  web +="<button>LIGHT OFF</button>\r\n";
+  web +="</a>\r\n";
+  web +="</p>\r\n";
+  web +="<a href=\"/lighton\">\r\n";
+  web +="<button>LIGHT ON</button>\r\n";
+  web +="</a>\r\n";
+    
+  web +="</p>\r\n";
+  web +="</p>\r\n";
+  web +="<a href=\"/dynamooff\">\r\n";
+  web +="<button>DYNAMO OFF</button>\r\n";
+  web +="</a>\r\n";
+  web +="</p>\r\n";
+  web +="<a href=\"/dynamoon\">\r\n";
+  web +="<button>DYNAMO ON</button>\r\n";
+  web +="</a>\r\n";
+  
+  web +="</body>\r\n";
+  web +="</html>\r\n";
+  
+  client.print(web);
+}
